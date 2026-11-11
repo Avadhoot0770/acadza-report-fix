@@ -89,8 +89,9 @@ export function EvidenceCard({
           )}
 
           {isAnswerKey && (
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
-              🚨 High-Stakes Answer Key
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              <span>Answer Key Mismatch</span>
             </span>
           )}
         </div>

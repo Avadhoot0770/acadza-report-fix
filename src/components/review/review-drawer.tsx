@@ -465,7 +465,7 @@ export function ReviewDrawer({ group, onClose }: ReviewDrawerProps) {
                   onClick={handleApproveClick}
                   className={`px-5 py-2 rounded-xl text-xs font-bold text-white shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer ${
                     isAnswerKey
-                      ? "bg-rose-600 hover:bg-rose-700 animate-pulse"
+                      ? "bg-rose-600 hover:bg-rose-700"
                       : "bg-emerald-600 hover:bg-emerald-700"
                   }`}
                 >

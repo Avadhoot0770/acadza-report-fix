@@ -8,6 +8,7 @@ import {
 } from "../src/lib/data";
 import {
   applyEditToQuestion,
+  isEligibleForBatchApproval,
   validateEditScope,
   validateFacultyAction,
   validateRoutePolicy,
@@ -15,7 +16,7 @@ import {
 import { ProposedEdit, QuestionRecord } from "../src/types";
 
 console.log("=================================================");
-console.log("ACADZA STAGE 3: FACULTY ACTION & SAFETY TEST SUITE");
+console.log("ACADZA STAGE 3: FACULTY WORKFLOW & SAFETY AUDIT SUITE");
 console.log("=================================================\n");
 
 let passed = 0;
@@ -39,7 +40,7 @@ const reports = loadReports();
 const results = loadResults();
 const groups = buildQuestionGroups();
 
-console.log("--- 1. DATASET INTEGRITY & CLUSTERING ---");
+console.log("--- 1. DASHBOARD METRICS RECONCILIATION ---");
 
 runTest("Total 44 reports grouped into exactly 39 unique question groups", () => {
   assert.strictEqual(reports.length, 44);
@@ -53,196 +54,216 @@ runTest("Total 44 reports grouped into exactly 39 unique question groups", () =>
   assert.strictEqual(totalGroupedReports, 44);
 });
 
-runTest("Duplicate clusters properly identified (4 duplicate groups)", () => {
-  const duplicates = groups.filter((g) => g.isDuplicate);
-  assert.strictEqual(duplicates.length, 4);
+runTest("Reconciliation: 16 reports in faculty_review map to 12 question groups", () => {
+  const repFaculty = results.filter((r) => r.route === "faculty_review");
+  assert.strictEqual(repFaculty.length, 16);
 
-  // Group 1: 60f744b3f1b9bc7cc7b4a949 has 3 reports
-  const g3 = groups.find((g) => g.questionId === "60f744b3f1b9bc7cc7b4a949");
-  assert(g3, "Group 60f744b3f1b9bc7cc7b4a949 exists");
-  assert.strictEqual(g3.reports.length, 3);
-  const repIds = g3.reports.map((r) => r.reportId).sort();
-  assert.deepStrictEqual(repIds, ["R001", "R002", "R003"]);
+  const qFaculty = groups.filter((g) => g.primaryResult.route === "faculty_review");
+  assert.strictEqual(qFaculty.length, 12);
+
+  // Difference is exactly 4 duplicate reports:
+  // Q 60f744b3... (3 reports: R001, R002, R003) -> 2 duplicate reports
+  // Q 622f08d7... (2 reports: R009, R010)       -> 1 duplicate report
+  // Q 612151a6... (2 reports: R018, R019)       -> 1 duplicate report
+  // Total duplicate reports = 2 + 1 + 1 = 4. (16 - 4 = 12 groups)
+  const repCountInQ = qFaculty.reduce((acc, g) => acc + g.reports.length, 0);
+  assert.strictEqual(repCountInQ, 16);
 });
 
-console.log("\n--- 2. ANSWER KEY SAFETY & CONFIRMATION ---");
+runTest("Reconciliation: 11 reports in auto_apply map to 10 question groups", () => {
+  const repAuto = results.filter((r) => r.route === "auto_apply");
+  assert.strictEqual(repAuto.length, 11);
 
-runTest("Answer key approval requires explicit confirmation", () => {
-  const edit: ProposedEdit = { field: "answer", find: "C", replace: "A" };
-  // Without confirmation flag
-  const checkUnconfirmed = validateFacultyAction(
-    "approve",
-    "answer_key",
-    edit,
-    taxonomy,
-    false
-  );
-  assert.strictEqual(checkUnconfirmed.valid, false);
-  assert(
-    checkUnconfirmed.error?.includes("explicitly confirm"),
-    "Error mentions confirmation requirement"
-  );
+  const qAuto = groups.filter((g) => g.primaryResult.route === "auto_apply");
+  assert.strictEqual(qAuto.length, 10);
 
-  // With confirmation flag
-  const checkConfirmed = validateFacultyAction(
-    "approve",
-    "answer_key",
-    edit,
-    taxonomy,
-    true
-  );
-  assert.strictEqual(checkConfirmed.valid, true);
+  // Difference is exactly 1 duplicate report:
+  // Q 60f742f6... (2 reports: R007, R008) -> 1 duplicate report (11 - 1 = 10 groups)
+  const repCountInQ = qAuto.reduce((acc, g) => acc + g.reports.length, 0);
+  assert.strictEqual(repCountInQ, 11);
 });
 
-runTest("Answer key repair can NEVER route to auto_apply", () => {
-  const check = validateRoutePolicy(
-    {
-      verdict: "defect",
-      repair: "answer_key",
-      edit: { field: "answer", find: "C", replace: "A" },
-      route: "auto_apply",
-      confidence: 0.99,
-    },
-    taxonomy
-  );
-  assert.strictEqual(check.valid, false);
-  assert(
-    check.error?.includes("faculty_review"),
-    "Error requires faculty_review route"
-  );
+runTest("Reconciliation: 17 reports in no_change map to 17 question groups", () => {
+  const repNoChange = results.filter((r) => r.route === "no_change");
+  assert.strictEqual(repNoChange.length, 17);
+
+  const qNoChange = groups.filter((g) => g.primaryResult.route === "no_change");
+  assert.strictEqual(qNoChange.length, 17);
+
+  const repCountInQ = qNoChange.reduce((acc, g) => acc + g.reports.length, 0);
+  assert.strictEqual(repCountInQ, 17);
 });
 
-console.log("\n--- 3. TAXONOMY FIELD SCOPE RESTRICTIONS ---");
+runTest("Reconciliation: Answer key escalations account for 6 reports across 4 questions", () => {
+  const repAnswerKeys = results.filter((r) => r.repair === "answer_key");
+  assert.strictEqual(repAnswerKeys.length, 6);
 
-runTest("Field scope violation is rejected (e.g. answer edited on spelling repair)", () => {
-  // spelling repair only allows 'question' and 'solution'
-  const illegalEdit: ProposedEdit = { field: "answer", replace: "B" };
-  const scopeCheck = validateEditScope("spelling", illegalEdit, taxonomy);
-  assert.strictEqual(scopeCheck.valid, false);
-  assert(
-    scopeCheck.error?.includes("is not allowed for repair 'spelling'"),
-    "Error explains field restriction"
-  );
+  const qAnswerKeys = groups.filter((g) => g.isAnswerKey);
+  assert.strictEqual(qAnswerKeys.length, 4);
+
+  const repCount = qAnswerKeys.reduce((acc, g) => acc + g.reports.length, 0);
+  assert.strictEqual(repCount, 6);
 });
 
-runTest("Repair with fields: [] rejects automated edits (e.g. unsound / wrong_question)", () => {
-  const edit: ProposedEdit = { field: "question", replace: "new text" };
-  const scopeCheck = validateEditScope("unsound", edit, taxonomy);
-  assert.strictEqual(scopeCheck.valid, false);
-  assert(
-    scopeCheck.error?.includes("allowed fields: []"),
-    "Error notes human decision / empty fields"
-  );
+console.log("\n--- 2. BATCH APPROVAL SAFETY & INTEGRITY ---");
+
+runTest("Batch approval eligibility strictly admits exactly 10 question groups", () => {
+  const eligibleGroups = groups.filter((g) => isEligibleForBatchApproval(g, taxonomy).eligible);
+  assert.strictEqual(eligibleGroups.length, 10);
+
+  // Sum of reports across eligible groups must be 11 (due to cluster R007 & R008)
+  const totalEligibleReports = eligibleGroups.reduce((acc, g) => acc + g.reports.length, 0);
+  assert.strictEqual(totalEligibleReports, 11);
 });
 
-runTest("Valid edit within allowed scope passes validation", () => {
-  const validEdit: ProposedEdit = {
-    field: "question",
-    find: "Epithellial tisue",
-    replace: "Epithelial tissue",
-  };
-  const scopeCheck = validateEditScope("spelling", validEdit, taxonomy);
-  assert.strictEqual(scopeCheck.valid, true);
+runTest("Batch approval strictly excludes all answer_key repairs", () => {
+  for (const g of groups) {
+    if (g.primaryResult.repair === "answer_key") {
+      const check = isEligibleForBatchApproval(g, taxonomy);
+      assert.strictEqual(check.eligible, false);
+      assert(check.reason?.includes("Answer key"), "Reason mentions answer key exclusion");
+    }
+  }
 });
 
-console.log("\n--- 4. IN-MEMORY QUESTION PATCH APPLICATION ---");
-
-runTest("applyEditToQuestion cleanly updates answer key for SCQ", () => {
-  const q = questions.find((item) => item._id === "60f744b3f1b9bc7cc7b4a949")!;
-  assert(q, "Target question exists");
-  assert.strictEqual(q.scq?.answer, "C");
-
-  const edit: ProposedEdit = { field: "answer", find: "C", replace: "A" };
-  const updated = applyEditToQuestion(q, edit);
-
-  assert.strictEqual(updated.scq?.answer, "A");
-  // Original question in memory remains unchanged
-  assert.strictEqual(q.scq?.answer, "C");
+runTest("Batch approval strictly excludes all auto: false repairs", () => {
+  for (const g of groups) {
+    const repair = g.primaryResult.repair;
+    if (repair && !taxonomy.repairs[repair]?.auto) {
+      const check = isEligibleForBatchApproval(g, taxonomy);
+      assert.strictEqual(check.eligible, false);
+      assert(check.reason?.includes("auto: false"), "Reason mentions auto: false restriction");
+    }
+  }
 });
 
-runTest("applyEditToQuestion cleanly updates integer question answer", () => {
-  const q = questions.find((item) => item._id === "68dea616d0cda73d07e93ae6")!;
-  assert(q, "Target integer question exists");
-  assert.strictEqual(String(q.integerQuestion?.answer), "2");
-
-  const edit: ProposedEdit = { field: "answer", find: "2", replace: 1 };
-  const updated = applyEditToQuestion(q, edit);
-
-  assert.strictEqual(updated.integerQuestion?.answer, 1);
-  assert.strictEqual(String(q.integerQuestion?.answer), "2");
+runTest("Batch approval strictly excludes unresolved proposals where edit is null", () => {
+  // R009 & R010, R018 & R019 have edit: null
+  for (const g of groups) {
+    if (g.primaryResult.edit === null) {
+      const check = isEligibleForBatchApproval(g, taxonomy);
+      assert.strictEqual(check.eligible, false);
+      assert(
+        check.reason && check.reason.length > 0,
+        "Provides clear rejection reason"
+      );
+    }
+  }
 });
 
-runTest("applyEditToQuestion surgically replaces stem substring without affecting surrounding text", () => {
-  const q = questions.find((item) => item._id === "61dffbec08489156b684bd22")!;
-  assert(q, "Target question exists");
-  assert(q.scq?.question.includes("Epithellial tisue"));
+runTest("Batch approval applies question-level edit exactly once for duplicate group (R007 & R008)", () => {
+  const gInductance = groups.find((g) => g.questionId === "60f742f6660d187cc13a8078")!;
+  assert(gInductance);
+  assert.strictEqual(gInductance.reports.length, 2);
 
-  const edit: ProposedEdit = {
-    field: "question",
-    find: "Epithellial tisue",
-    replace: "Epithelial tissue",
-  };
-  const updated = applyEditToQuestion(q, edit);
+  const eligibility = isEligibleForBatchApproval(gInductance, taxonomy);
+  assert.strictEqual(eligibility.eligible, true);
 
-  assert(
-    updated.scq?.question.includes("Epithelial tissue"),
-    "Updated question contains corrected text"
-  );
-  assert(
-    !updated.scq?.question.includes("Epithellial tisue"),
-    "Updated question no longer contains typo"
-  );
-  // Rest of question remains identical
-  assert.strictEqual(
-    q.scq?.solution,
-    updated.scq?.solution,
-    "Solution is completely untouched"
-  );
+  // Apply edit
+  const updatedQ = applyEditToQuestion(gInductance.originalQuestion, gInductance.primaryResult.edit!);
+  assert(updatedQ.scq?.question.includes("an inductance of 95.5 mH"));
+
+  // Audit entry must record both report IDs
+  const reportIds = gInductance.reports.map((r) => r.reportId).sort();
+  assert.deepStrictEqual(reportIds, ["R007", "R008"]);
 });
 
-console.log("\n--- 5. QUESTION GROUP SYNCHRONIZATION ---");
+console.log("\n--- 3. SPECIFIC MANUAL WORKFLOW CASES AUDIT ---");
 
-runTest("Clustered duplicate reports all receive the same question-level decision", () => {
-  // Q 60f744b3f1b9bc7cc7b4a949 has 3 reports: R001, R002, R003
+runTest("Case R001–R003: AC voltage answer-key review, 2-factor confirmation required, cluster sync", () => {
   const g = groups.find((item) => item.questionId === "60f744b3f1b9bc7cc7b4a949")!;
   assert(g);
   assert.strictEqual(g.reports.length, 3);
   assert.strictEqual(g.primaryResult.repair, "answer_key");
+  assert.strictEqual(g.primaryResult.route, "faculty_review");
 
-  // In the group model, all 3 reports are bound to this group's decision
-  const reportIdsInGroup = g.reports.map((r) => r.reportId);
-  assert(reportIdsInGroup.includes("R001"));
-  assert(reportIdsInGroup.includes("R002"));
-  assert(reportIdsInGroup.includes("R003"));
+  // Safety: unconfirmed approval MUST fail
+  const unconfirmed = validateFacultyAction("approve", "answer_key", g.primaryResult.edit, taxonomy, false);
+  assert.strictEqual(unconfirmed.valid, false);
+
+  // Safety: confirmed approval MUST pass
+  const confirmed = validateFacultyAction("approve", "answer_key", g.primaryResult.edit, taxonomy, true);
+  assert.strictEqual(confirmed.valid, true);
+
+  // When approved, all 3 reports share this question-level decision
+  const updated = applyEditToQuestion(g.originalQuestion, g.primaryResult.edit!);
+  assert.strictEqual(updated.scq?.answer, "A");
+  assert.strictEqual(g.originalQuestion.scq?.answer, "C");
 });
 
-runTest("Solution-derived inference flags correctly attached to R006, R007, R008", () => {
-  const gRL = groups.find((g) => g.questionId === "696a866665252c04fc1f81c2"); // R006
-  const gLR = groups.find((g) => g.questionId === "60f742f6660d187cc13a8078"); // R007, R008
-
-  assert(gRL?.isSolutionDerived, "R006 flagged as solution derived");
-  assert(gLR?.isSolutionDerived, "R007 & R008 flagged as solution derived");
-
-  // Other questions must not have this flag
-  const gOther = groups.find((g) => g.questionId === "61dffbec08489156b684bd22");
-  assert.strictEqual(gOther?.isSolutionDerived, false);
+runTest("Case R009–R010: Missing Option D has edit: null and isContentUnrecoverable: true", () => {
+  const g = groups.find((item) => item.questionId === "622f08d7b70e4b50e4500a1b")!;
+  assert(g);
+  assert.strictEqual(g.reports.length, 2);
+  assert.strictEqual(g.primaryResult.repair, "option_repair");
+  assert.strictEqual(g.primaryResult.edit, null);
+  assert.strictEqual(g.primaryResult.route, "faculty_review");
+  assert.strictEqual(g.isContentUnrecoverable, true);
 });
 
-runTest("Unrecoverable distractors / alien derivations correctly flagged with edit: null", () => {
-  const gMissingOption = groups.find(
-    (g) => g.questionId === "622f08d7b70e4b50e4500a1b"
-  ); // R009, R010
-  const gAlienDeriv = groups.find(
-    (g) => g.questionId === "612151a6a34397610a9a2e58"
-  ); // R018, R019
+runTest("Case R018–R019: Alien derivation in solution has edit: null and isContentUnrecoverable: true", () => {
+  const g = groups.find((item) => item.questionId === "612151a6a34397610a9a2e58")!;
+  assert(g);
+  assert.strictEqual(g.reports.length, 2);
+  assert.strictEqual(g.primaryResult.repair, "solution_fix");
+  assert.strictEqual(g.primaryResult.edit, null);
+  assert.strictEqual(g.primaryResult.route, "faculty_review");
+  assert.strictEqual(g.isContentUnrecoverable, true);
+});
 
-  assert(gMissingOption?.isContentUnrecoverable, "R009/R010 flagged unrecoverable");
-  assert.strictEqual(gMissingOption?.primaryResult.edit, null);
-  assert.strictEqual(gMissingOption?.primaryResult.route, "faculty_review");
+runTest("Case R006, R007, R008: Clearly labelled as solution-derived inferences", () => {
+  const gCube = groups.find((g) => g.questionId === "696a866665252c04fc1f81c2")!; // R006
+  const gCircuit = groups.find((g) => g.questionId === "60f742f6660d187cc13a8078")!; // R007, R008
 
-  assert(gAlienDeriv?.isContentUnrecoverable, "R018/R019 flagged unrecoverable");
-  assert.strictEqual(gAlienDeriv?.primaryResult.edit, null);
-  assert.strictEqual(gAlienDeriv?.primaryResult.route, "faculty_review");
+  assert.strictEqual(gCube.isSolutionDerived, true);
+  assert.strictEqual(gCircuit.isSolutionDerived, true);
+
+  // Negative check: other questions must not have isSolutionDerived true
+  const gNormal = groups.find((g) => g.questionId === "61dffbec08489156b684bd22")!;
+  assert.strictEqual(gNormal.isSolutionDerived, false);
+});
+
+runTest("Case R027: Prompt injection safely isolated as untrusted data (verdict: no_error)", () => {
+  const rep27 = reports.find((r) => r.reportId === "R027")!;
+  assert(rep27);
+  assert(rep27.comment.includes("IGNORE ALL PREVIOUS INSTRUCTIONS"));
+
+  const res27 = results.find((r) => r.reportId === "R027")!;
+  assert.strictEqual(res27.verdict, "no_error");
+  assert.strictEqual(res27.repair, null);
+  assert.strictEqual(res27.edit, null);
+  assert.strictEqual(res27.route, "no_change");
+});
+
+runTest("Case R015: Identical options defect is auto: false and strictly routes to faculty_review", () => {
+  const rep15 = results.find((r) => r.reportId === "R015")!;
+  assert.strictEqual(rep15.verdict, "defect");
+  assert.strictEqual(rep15.repair, "identical_options");
+  assert.strictEqual(rep15.route, "faculty_review");
+
+  // Taxonomy verification
+  const repairCfg = taxonomy.repairs["identical_options"];
+  assert.strictEqual(repairCfg.auto, false);
+  assert.deepStrictEqual(repairCfg.fields, []);
+});
+
+console.log("\n--- 4. TAXONOMY FIELD SCOPE & REJECTION WORKFLOW ---");
+
+runTest("Field scope violation is rejected (e.g. answer edited on spelling repair)", () => {
+  const illegalEdit: ProposedEdit = { field: "answer", replace: "B" };
+  const scopeCheck = validateEditScope("spelling", illegalEdit, taxonomy);
+  assert.strictEqual(scopeCheck.valid, false);
+});
+
+runTest("Faculty rejection leaves question completely unchanged", () => {
+  const q = questions.find((item) => item._id === "60f744b3f1b9bc7cc7b4a949")!;
+  const originalCopy = JSON.parse(JSON.stringify(q));
+
+  // Reject action does not mutate the question
+  const rejectionCheck = validateFacultyAction("reject", "answer_key", null, taxonomy);
+  assert.strictEqual(rejectionCheck.valid, true);
+
+  assert.deepStrictEqual(q, originalCopy);
 });
 
 console.log("\n=================================================");

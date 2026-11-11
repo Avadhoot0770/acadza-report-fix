@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,9 +10,12 @@ import {
   History,
   Layers,
   LayoutDashboard,
+  Menu,
   MessageSquareWarning,
   ShieldCheck,
   Sparkles,
+  User,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,14 +26,15 @@ interface SidebarProps {
 
 export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navigation = [
     {
       name: "Triage Console",
       href: "/",
       icon: LayoutDashboard,
-      badge: reportCount,
-      badgeColor: "bg-blue-100 text-blue-700",
+      badge: "39 Qs (44 Rep)",
+      badgeColor: "bg-blue-100 text-blue-800",
     },
     {
       name: "Question Bank",
@@ -50,12 +55,16 @@ export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) 
     },
   ];
 
-  return (
-    <aside className="w-64 border-r border-slate-200 bg-white flex flex-col shrink-0 h-screen sticky top-0">
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-white">
       {/* Brand Header */}
       <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-sm shadow-blue-500/30">
+        <Link
+          href="/"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-3"
+        >
+          <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
             A
           </div>
           <div>
@@ -67,9 +76,19 @@ export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) 
                 Fix
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium">Faculty Triage Console</p>
+            <p className="text-[11px] text-slate-500 font-medium">
+              Faculty Triage Console
+            </p>
           </div>
         </Link>
+        {mobileOpen && (
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Safety Policy Status Banner */}
@@ -77,7 +96,9 @@ export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) 
         <div className="flex items-start gap-2.5">
           <ShieldCheck className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-emerald-900">Safety Guardrails Active</p>
+            <p className="text-xs font-semibold text-emerald-900">
+              Safety Guardrails Active
+            </p>
             <p className="text-[11px] text-emerald-700 leading-tight mt-0.5">
               Strict taxonomy whitelist & closed field scopes enforced.
             </p>
@@ -97,6 +118,7 @@ export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) 
             <Link
               key={item.name}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
               className={cn(
                 "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 isActive
@@ -116,7 +138,7 @@ export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) 
               {item.badge !== undefined && (
                 <span
                   className={cn(
-                    "text-xs px-2 py-0.5 rounded-full font-semibold",
+                    "text-[10px] px-2 py-0.5 rounded-full font-semibold",
                     item.badgeColor
                   )}
                 >
@@ -131,7 +153,7 @@ export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) 
       {/* Faculty Profile Footer */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 text-white flex items-center justify-center font-medium text-xs shadow-sm">
+          <div className="h-9 w-9 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shadow-sm">
             AS
           </div>
           <div className="flex-1 min-w-0">
@@ -144,6 +166,47 @@ export function Sidebar({ reportCount = 44, questionCount = 43 }: SidebarProps) 
           </div>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile Top Navigation Bar */}
+      <div className="md:hidden sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-2xs">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+            A
+          </div>
+          <span className="font-bold text-sm text-slate-900">
+            Acadza <span className="text-blue-600 text-xs uppercase">Fix</span>
+          </span>
+        </Link>
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+          aria-label="Open Navigation Menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Mobile Drawer Overlay */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="relative w-72 max-w-[80vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Persistent Sidebar */}
+      <aside className="hidden md:flex w-64 border-r border-slate-200 bg-white flex-col shrink-0 h-screen sticky top-0">
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

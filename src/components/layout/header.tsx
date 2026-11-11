@@ -43,7 +43,7 @@ export function Header({
 
         {/* Live Safety Badge */}
         <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
           <span>Strict Safety Guard Mode</span>
         </div>
       </div>

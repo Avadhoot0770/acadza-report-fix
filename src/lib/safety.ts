@@ -1,6 +1,7 @@
 import {
   EditableField,
   ProposedEdit,
+  QuestionGroup,
   QuestionRecord,
   QuestionType,
   RepairKey,
@@ -341,4 +342,102 @@ export function applyEditToQuestion(
   }
 
   return cloned;
+}
+
+/**
+ * Rigorously checks whether a QuestionGroup is eligible for automated batch approval:
+ * 1. Must currently be in 'auto_applied' status (or pending_review with route auto_apply).
+ * 2. Must have route === 'auto_apply'.
+ * 3. MUST NOT be an answer_key repair (mandatory safety requirement).
+ * 4. Repair must have auto: true in taxonomy.
+ * 5. Must have a non-null, valid edit payload.
+ * 6. Must pass validateEditScope and validateRoutePolicy.
+ * 7. Must pass confidence threshold >= 0.85.
+ */
+export function isEligibleForBatchApproval(
+  group: QuestionGroup,
+  taxonomy: Taxonomy
+): { eligible: boolean; reason?: string } {
+  const { primaryResult } = group;
+
+  // 1. Mandatory Project Safety Rule: Answer keys can NEVER be batch approved
+  if (primaryResult.repair === "answer_key") {
+    return {
+      eligible: false,
+      reason:
+        "Answer key corrections require explicit individual faculty review and confirmation",
+    };
+  }
+
+  // 2. Strict Taxonomy Rule: auto: false repairs can NEVER be batch approved
+  if (primaryResult.repair) {
+    const repairConfig = taxonomy.repairs[primaryResult.repair];
+    if (repairConfig && !repairConfig.auto) {
+      return {
+        eligible: false,
+        reason: `Repair '${primaryResult.repair}' has auto: false in taxonomy`,
+      };
+    }
+  }
+
+  // 3. Unresolved proposals with edit: null can NEVER be batch approved
+  if (!primaryResult.edit) {
+    return {
+      eligible: false,
+      reason: "No concrete proposed edit available (edit: null)",
+    };
+  }
+
+  // 4. Must strictly be routed to auto_apply
+  if (primaryResult.route !== "auto_apply") {
+    return {
+      eligible: false,
+      reason: `Route '${primaryResult.route}' cannot be batch approved; only 'auto_apply' is eligible`,
+    };
+  }
+
+  // 5. Must currently be in an eligible pending status
+  if (group.status !== "auto_applied" && group.status !== "pending_review") {
+    return {
+      eligible: false,
+      reason: `Status '${group.status}' is not eligible for batch approval`,
+    };
+  }
+
+  if (!primaryResult.repair) {
+    return {
+      eligible: false,
+      reason: "No repair key present",
+    };
+  }
+
+  const repairConfig = taxonomy.repairs[primaryResult.repair];
+  if (!repairConfig) {
+    return {
+      eligible: false,
+      reason: `Repair '${primaryResult.repair}' does not exist in taxonomy`,
+    };
+  }
+
+  // 6. Validate scope
+  const scopeCheck = validateEditScope(
+    primaryResult.repair,
+    primaryResult.edit,
+    taxonomy
+  );
+  if (!scopeCheck.valid) {
+    return {
+      eligible: false,
+      reason: scopeCheck.error,
+    };
+  }
+
+  if (primaryResult.confidence < 0.85) {
+    return {
+      eligible: false,
+      reason: `Confidence ${primaryResult.confidence} < 0.85`,
+    };
+  }
+
+  return { eligible: true };
 }

@@ -16,7 +16,11 @@ import {
   ReviewStatus,
   Taxonomy,
 } from "@/types";
-import { applyEditToQuestion, validateFacultyAction } from "@/lib/safety";
+import {
+  applyEditToQuestion,
+  isEligibleForBatchApproval,
+  validateFacultyAction,
+} from "@/lib/safety";
 
 const STORAGE_KEY_DECISIONS = "acadza_faculty_decisions_v1";
 const STORAGE_KEY_AUDIT = "acadza_faculty_audit_v1";
@@ -45,6 +49,25 @@ interface ReviewContextType {
   metrics: {
     totalReports: number;
     uniqueQuestions: number;
+    pendingFacultyReviewQuestions: number;
+    pendingFacultyReviewReports: number;
+    autoApplyQuestions: number;
+    autoApplyReports: number;
+    noChangeQuestions: number;
+    noChangeReports: number;
+    answerKeyQuestions: number;
+    answerKeyReports: number;
+    duplicateClustersCount: number;
+    duplicateClusterReports: number;
+    approvedQuestions: number;
+    approvedReports: number;
+    editedQuestions: number;
+    editedReports: number;
+    rejectedQuestions: number;
+    rejectedReports: number;
+    totalDecidedQuestions: number;
+    totalDecidedReports: number;
+    // Backward-compatible aliases
     pendingFacultyReview: number;
     autoApplyProposals: number;
     noChangeCases: number;
@@ -400,11 +423,8 @@ export function ReviewProvider({
     const newAuditEntries: FacultyAuditEntry[] = [];
 
     const updatedGroups = questionGroups.map((g) => {
-      if (
-        (g.status === "auto_applied" || g.status === "pending_review") &&
-        g.primaryResult.route === "auto_apply" &&
-        g.primaryResult.edit
-      ) {
+      const eligibility = isEligibleForBatchApproval(g, taxonomy);
+      if (eligibility.eligible && g.primaryResult.edit) {
         approvedCount++;
         const editToApply = g.primaryResult.edit;
         const updatedQuestion = applyEditToQuestion(
@@ -495,43 +515,92 @@ export function ReviewProvider({
   // Dynamic live metrics derived from state
   const metrics = useMemo(() => {
     let totalReports = 0;
-    let pendingFacultyReview = 0;
-    let autoApplyProposals = 0;
-    let noChangeCases = 0;
-    let approvedCount = 0;
-    let editedCount = 0;
-    let rejectedCount = 0;
-    let answerKeyCount = 0;
+    let pendingFacultyReviewQuestions = 0;
+    let pendingFacultyReviewReports = 0;
+    let autoApplyQuestions = 0;
+    let autoApplyReports = 0;
+    let noChangeQuestions = 0;
+    let noChangeReports = 0;
+    let approvedQuestions = 0;
+    let approvedReports = 0;
+    let editedQuestions = 0;
+    let editedReports = 0;
+    let rejectedQuestions = 0;
+    let rejectedReports = 0;
+    let answerKeyQuestions = 0;
+    let answerKeyReports = 0;
+    let duplicateClustersCount = 0;
+    let duplicateClusterReports = 0;
 
     for (const g of questionGroups) {
-      totalReports += g.reports.length;
-      if (g.isAnswerKey) answerKeyCount++;
+      const repCount = g.reports.length;
+      totalReports += repCount;
+
+      if (g.isDuplicate) {
+        duplicateClustersCount++;
+        duplicateClusterReports += repCount;
+      }
+
+      if (g.isAnswerKey) {
+        answerKeyQuestions++;
+        answerKeyReports += repCount;
+      }
 
       if (g.status === "pending_review") {
-        pendingFacultyReview++;
+        pendingFacultyReviewQuestions++;
+        pendingFacultyReviewReports += repCount;
       } else if (g.status === "auto_applied") {
-        autoApplyProposals++;
+        autoApplyQuestions++;
+        autoApplyReports += repCount;
       } else if (g.status === "no_action_needed") {
-        noChangeCases++;
+        noChangeQuestions++;
+        noChangeReports += repCount;
       } else if (g.status === "approved") {
-        approvedCount++;
+        approvedQuestions++;
+        approvedReports += repCount;
       } else if (g.status === "edited") {
-        editedCount++;
+        editedQuestions++;
+        editedReports += repCount;
       } else if (g.status === "rejected") {
-        rejectedCount++;
+        rejectedQuestions++;
+        rejectedReports += repCount;
       }
     }
+
+    const totalDecidedQuestions =
+      approvedQuestions + editedQuestions + rejectedQuestions;
+    const totalDecidedReports =
+      approvedReports + editedReports + rejectedReports;
 
     return {
       totalReports,
       uniqueQuestions: questionGroups.length,
-      pendingFacultyReview,
-      autoApplyProposals,
-      noChangeCases,
-      approvedCount,
-      editedCount,
-      rejectedCount,
-      answerKeyCount,
+      pendingFacultyReviewQuestions,
+      pendingFacultyReviewReports,
+      autoApplyQuestions,
+      autoApplyReports,
+      noChangeQuestions,
+      noChangeReports,
+      answerKeyQuestions,
+      answerKeyReports,
+      duplicateClustersCount,
+      duplicateClusterReports,
+      approvedQuestions,
+      approvedReports,
+      editedQuestions,
+      editedReports,
+      rejectedQuestions,
+      rejectedReports,
+      totalDecidedQuestions,
+      totalDecidedReports,
+      // Backward-compatible aliases
+      pendingFacultyReview: pendingFacultyReviewQuestions,
+      autoApplyProposals: autoApplyQuestions,
+      noChangeCases: noChangeQuestions,
+      approvedCount: approvedQuestions,
+      editedCount: editedQuestions,
+      rejectedCount: rejectedQuestions,
+      answerKeyCount: answerKeyQuestions,
     };
   }, [questionGroups]);
 

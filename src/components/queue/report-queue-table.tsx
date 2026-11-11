@@ -47,6 +47,19 @@ export function ReportQueueTable({
   const [duplicateOnly, setDuplicateOnly] = useState<boolean>(false);
   const [answerKeyOnly, setAnswerKeyOnly] = useState<boolean>(false);
 
+  // Extract dynamic route counts for filter buttons
+  const routeCounts = useMemo(() => {
+    let facultyReview = 0;
+    let autoApply = 0;
+    let noChange = 0;
+    for (const g of groups) {
+      if (g.primaryResult.route === "faculty_review") facultyReview++;
+      else if (g.primaryResult.route === "auto_apply") autoApply++;
+      else if (g.primaryResult.route === "no_change") noChange++;
+    }
+    return { facultyReview, autoApply, noChange };
+  }, [groups]);
+
   // Extract unique subjects
   const subjects = useMemo(() => {
     const set = new Set<string>();
@@ -204,7 +217,7 @@ export function ReportQueueTable({
             >
               <span>Faculty Review</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-200/60 text-purple-900 font-bold">
-                12
+                {routeCounts.facultyReview}
               </span>
             </button>
             <button
@@ -217,7 +230,7 @@ export function ReportQueueTable({
             >
               <span>Safe Auto-Apply</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-teal-200/60 text-teal-950 font-bold">
-                10
+                {routeCounts.autoApply}
               </span>
             </button>
             <button
@@ -230,7 +243,7 @@ export function ReportQueueTable({
             >
               <span>No Change</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-300 text-slate-800 font-bold">
-                17
+                {routeCounts.noChange}
               </span>
             </button>
           </div>
@@ -487,9 +500,9 @@ export function ReportQueueTable({
                           </span>
 
                           {isAnswerKey ? (
-                            <div className="text-[10px] font-bold text-rose-700 flex items-center gap-1 animate-pulse">
+                            <div className="text-[10px] font-bold text-rose-700 flex items-center gap-1">
                               <AlertOctagon className="h-3 w-3" />
-                              <span>High Stakes Key</span>
+                              <span>Answer Key Mismatch</span>
                             </div>
                           ) : group.isSolutionDerived ? (
                             <div className="text-[10px] font-semibold text-blue-700">
