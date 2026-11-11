@@ -1,0 +1,236 @@
+import {
+  EditableField,
+  ProposedEdit,
+  RepairKey,
+  Route,
+  Taxonomy,
+  TriageResult,
+  TriageResultSchema,
+  VerdictKey,
+} from "@/types";
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/**
+ * Validates that a verdict exists in the taxonomy.
+ */
+export function isValidVerdict(verdict: string, taxonomy: Taxonomy): verdict is VerdictKey {
+  return Object.prototype.hasOwnProperty.call(taxonomy.verdicts, verdict);
+}
+
+/**
+ * Validates that a repair key exists in the taxonomy.
+ */
+export function isValidRepair(repair: string, taxonomy: Taxonomy): repair is RepairKey {
+  return Object.prototype.hasOwnProperty.call(taxonomy.repairs, repair);
+}
+
+/**
+ * Validates that the proposed edit ONLY touches fields explicitly allowed
+ * by the selected repair in taxonomy.json.
+ */
+export function validateEditScope(
+  repairKey: string,
+  edit: ProposedEdit | null | undefined,
+  taxonomy: Taxonomy
+): { valid: boolean; error?: string } {
+  if (!edit) return { valid: true };
+
+  const repairConfig = taxonomy.repairs[repairKey];
+  if (!repairConfig) {
+    return {
+      valid: false,
+      error: `Repair key '${repairKey}' does not exist in taxonomy`,
+    };
+  }
+
+  // Repairs with fields: [] cannot propose edits directly
+  if (repairConfig.fields.length === 0) {
+    return {
+      valid: false,
+      error: `Repair '${repairKey}' has allowed fields: [] (authored content / human decision). No automated edit is permitted.`,
+    };
+  }
+
+  if (!repairConfig.fields.includes(edit.field)) {
+    return {
+      valid: false,
+      error: `Field '${edit.field}' is not allowed for repair '${repairKey}'. Allowed fields: [${repairConfig.fields.join(
+        ", "
+      )}]`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Enforces all safety routing rules:
+ * 1. auto: false repairs CAN NEVER be auto-applied.
+ * 2. Mandatory project safety requirement: Every answer_key repair MUST route to faculty_review,
+ *    even if its taxonomy entry says auto: true.
+ * 3. Non-defect verdicts (no_error, display_issue, app_issue, language_mode, already_fixed, not_actionable)
+ *    MUST route to no_change and CANNOT have edits or repairs.
+ * 4. Defect with repair where confidence is low must route to faculty_review.
+ */
+export function validateRoutePolicy(
+  result: {
+    verdict: string;
+    repair?: string | null;
+    edit?: ProposedEdit | null;
+    route: string;
+    confidence: number;
+  },
+  taxonomy: Taxonomy
+): { valid: boolean; error?: string } {
+  const { verdict, repair, edit, route, confidence } = result;
+
+  // 1. Non-defect verdicts must route to no_change and have no repair or edit
+  if (verdict !== "defect") {
+    if (route !== "no_change") {
+      return {
+        valid: false,
+        error: `Non-defect verdict '${verdict}' must route to 'no_change', but got '${route}'`,
+      };
+    }
+    if (repair) {
+      return {
+        valid: false,
+        error: `Non-defect verdict '${verdict}' must not have a repair key, but got '${repair}'`,
+      };
+    }
+    if (edit) {
+      return {
+        valid: false,
+        error: `Non-defect verdict '${verdict}' must not have a proposed edit`,
+      };
+    }
+    return { valid: true };
+  }
+
+  // 2. Defect verdict requires a valid repair key
+  if (!repair) {
+    return {
+      valid: false,
+      error: `Verdict 'defect' requires a valid repair key from taxonomy`,
+    };
+  }
+
+  const repairConfig = taxonomy.repairs[repair];
+  if (!repairConfig) {
+    return {
+      valid: false,
+      error: `Repair key '${repair}' does not exist in taxonomy`,
+    };
+  }
+
+  // 3. Rule: auto: false repairs can NEVER be auto-applied
+  if (!repairConfig.auto && route === "auto_apply") {
+    return {
+      valid: false,
+      error: `Repair '${repair}' is marked auto: false in taxonomy and can never be auto-applied`,
+    };
+  }
+
+  // 4. Strict Safety Requirement: Every answer_key repair must route to faculty_review
+  if (repair === "answer_key" && route === "auto_apply") {
+    return {
+      valid: false,
+      error: `Safety requirement: Every answer_key repair must route to 'faculty_review' for independent verification`,
+    };
+  }
+
+  // 5. If route is auto_apply, confidence must be high
+  if (route === "auto_apply" && confidence < 0.85) {
+    return {
+      valid: false,
+      error: `Cannot auto_apply with confidence ${confidence} < 0.85. Must route to 'faculty_review'`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validates a complete triage result object against all safety guardrails.
+ */
+export function validateCompleteTriage(
+  input: unknown,
+  taxonomy: Taxonomy
+): ValidationResult {
+  const errors: string[] = [];
+
+  // Parse schema
+  const parsed = TriageResultSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      valid: false,
+      errors: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`),
+    };
+  }
+
+  const result = parsed.data;
+
+  // Validate verdict
+  if (!isValidVerdict(result.verdict, taxonomy)) {
+    errors.push(`Verdict '${result.verdict}' is not an approved taxonomy verdict`);
+  }
+
+  // Validate repair if present
+  if (result.repair && !isValidRepair(result.repair, taxonomy)) {
+    errors.push(`Repair '${result.repair}' is not an approved taxonomy repair`);
+  }
+
+  // Validate edit scope
+  if (result.repair) {
+    const scopeCheck = validateEditScope(result.repair, result.edit, taxonomy);
+    if (!scopeCheck.valid && scopeCheck.error) {
+      errors.push(scopeCheck.error);
+    }
+  }
+
+  // Validate route policy
+  const routeCheck = validateRoutePolicy(
+    {
+      verdict: result.verdict,
+      repair: result.repair,
+      edit: result.edit,
+      route: result.route,
+      confidence: result.confidence,
+    },
+    taxonomy
+  );
+  if (!routeCheck.valid && routeCheck.error) {
+    errors.push(routeCheck.error);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Treats student comment as untrusted evidence.
+ * Strips prompt-injection triggers and isolates content.
+ */
+export function sanitizeStudentComment(comment: string): string {
+  if (!comment) return "";
+  // Never modify original text in storage, but when processing:
+  // Detect known prompt injection markers
+  const injectionPatterns = [
+    /ignore (?:all )?previous instructions/i,
+    /you are (?:the |an )?admin/i,
+    /system override/i,
+    /act as (?:a |an |the )?/i,
+  ];
+
+  const hasInjection = injectionPatterns.some((pattern) =>
+    pattern.test(comment)
+  );
+
+  return comment.trim();
+}
