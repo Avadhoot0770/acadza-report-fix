@@ -6,9 +6,9 @@
 
 ## 1. System Overview & Implementation Architecture
 
-In high-stakes academic competitive examination systems (JEE Advanced, JEE Main, NEET-UG), incorrect questions, erroneous answer keys, and broken explanations severely compromise student rank percentiles and institutional credibility.
+In high-stakes academic competitive examination systems (JEE Advanced, JEE Main, NEET-UG), incorrect questions, erroneous answer keys, and broken explanations directly impact student scoring accuracy, grading consistency, and institutional credibility.
 
-To guarantee zero hallucinations and total reproducibility, the Acadza system operates as a **hybrid deterministic-AI architecture**:
+To prevent unsupported hallucinations and guarantee total reproducibility, the Acadza system operates as a **hybrid deterministic-AI architecture**:
 - **Deterministic & Scientific Engine:** Executes first-principles mathematical and scientific solvers, MathML/LaTeX syntactic parsers, structural schema checkers, and duplicate cluster detectors.
 - **Prompt Engineering System:** Defines structured prompt contracts, boundary isolation wrappers, and zero-shot/few-shot prompt specifications designed for production LLM integration (Gemini 1.5 Pro / GPT-4o).
 - **Runtime Safety Guardrails:** Programmatic policy validators that enforce closed-taxonomy whitelists, field-scope immutability, mandatory human review on answer keys, and prompt-injection neutralization.
@@ -18,7 +18,8 @@ flowchart TD
     A[Student Report Ingestion] --> B[Boundary Isolation Wrapper &lt;student_lead&gt;]
     B --> C[Duplicate Question Clusterer]
     C --> D[First-Principles Scientific Solver & Structural Engine]
-    D --> E{Defect Detected?}
+    E{Defect Detected?}
+    D --> E
     E -->|No Defect / Client Issue| F[Verdict: no_error / display_issue / app_issue<br/>Route: no_change]
     E -->|Defect Confirmed| G{Repair Type & Scope Analysis}
     G -->|answer_key OR auto:false OR edit:null| H[Route: faculty_review<br/>Requires Human Sign-Off]
@@ -28,8 +29,8 @@ flowchart TD
     I --> J
     H --> K[Faculty Review Console]
     I --> K
-    K --> L[2-Factor Acknowledgment on Answer Keys]
-    K --> M[Immutable Institutional Audit Log]
+    K --> L[Two-Step Confirmation Checklist on Answer Keys]
+    K --> M[Browser-Local Faculty Audit History]
 ```
 
 ---
@@ -215,7 +216,7 @@ Faculty reviewing questions late at night require high-density, low-cognitive-lo
 ### 1. Why Answer-Key Repairs Always Require Human Verification
 - **Attempted:** Exploring whether answer-key changes with solver confidence = 1.0 (such as single-variable algebra) could be auto-applied.
 - **Rejected:** All automated answer-key alterations were strictly blocked.
-- **Safety & Product Rationale:** An answer key change is an irreversible, high-impact event that retroactively alters scores and percentile rankings for thousands of test takers. An AI model or rule engine, however confident, must never unilaterally alter grading criteria without institutional faculty sign-off. The system enforces a mandatory 2-factor acknowledgment dialog before committing.
+- **Safety & Product Rationale:** An answer key change is an irreversible, high-impact event that retroactively alters scores and grading results for thousands of test takers. An AI model or rule engine, however confident, must never unilaterally alter grading criteria without institutional faculty sign-off. The system enforces a mandatory two-step faculty confirmation checklist before committing.
 
 ### 2. Why `auto: false` Taxonomy Repairs Cannot Be Automated
 - **Attempted:** Examining if missing diagrams or identical options could auto-generate placeholders or automated distractor replacements.
@@ -368,11 +369,11 @@ Focus on a calm, high-efficiency experience for faculty working late at night:
 - Question review drawer rendering HTML/MathML, options, stored answers, and solutions.
 - Surgical word-level diff viewer (diffWords) for proposed edits.
 - Scientific derivation evidence card with confidence scores.
-- 2-factor confirmation modal for answer-key modifications.
+- Two-step confirmation checklist modal for answer-key modifications.
 - Custom edit modal enforcing taxonomy field scope.
 - Rejection modal recording structured faculty rationales.
 - Empathetic student reply preview.
-- Immutable audit ledger with browser-local demo persistence.
+- Browser-local faculty audit history with demo persistence.
 ```
 *Directing Outcome:* Delivered responsive, accessible review console with full interactive drawer, surgical diffs, and audit trail.
 
@@ -389,7 +390,7 @@ Audit dashboard metrics and batch approval safety:
    - Validate every edit using safety functions.
    - Apply edits once per question group.
    - Create accurate audit entries.
-3. Test edge cases: R001-R003 (answer key 2FA), R007-R008 (duplicate consolidation), R009-R010 (missing option), R018-R019 (unrelated solution), R027 (injection resistance).
+3. Test edge cases: R001-R003 (answer key two-step confirmation), R007-R008 (duplicate consolidation), R009-R010 (missing option), R018-R019 (unrelated solution), R027 (injection resistance).
 4. Remove excessive animations (animate-pulse) and emojis for a professional academic aesthetic.
 5. Make layout responsive on mobile viewports.
 ```
@@ -404,5 +405,5 @@ Audit dashboard metrics and batch approval safety:
 | **Missing Content** | Hallucinates plausible distractors or formulas to "complete" the record. | `edit: null` mandatory when content is unrecoverable; route to `faculty_review`. |
 | **User Assertions** | Treats user/student claims as ground truth to be satisfied. | Designates input as `<student_lead>` untrusted evidence; solver runs first principles. |
 | **Scope Creep** | Rewrites full question stems, modifying styling and markup. | Enforces strict `{ field, find, replace }` contract; validates target against taxonomy whitelist. |
-| **High-Stakes Actions** | Auto-applies changes when model confidence is high. | Hardcoded safety barrier: `answer_key` changes ALWAYS route to `faculty_review` and require 2FA sign-off. |
+| **High-Stakes Actions** | Auto-applies changes when model confidence is high. | Hardcoded safety barrier: `answer_key` changes ALWAYS route to `faculty_review` and require two-step confirmation sign-off. |
 | **Data Integrity** | Modifies seed JSON files during testing or triage execution. | Immutable file permissions; zero writes permitted outside `src/` and generated output directories. |

@@ -140,9 +140,9 @@ async function runBrowserAudit() {
     );
 
     // -------------------------------------------------------------
-    // 5. 2-FACTOR ANSWER KEY CONFIRMATION GATE
+    // 5. TWO-STEP ANSWER KEY CONFIRMATION GATE
     // -------------------------------------------------------------
-    console.log("\n--- 5. 2-FACTOR ANSWER KEY CONFIRMATION GATE ---");
+    console.log("\n--- 5. TWO-STEP ANSWER KEY CONFIRMATION GATE ---");
     // Switch back to Question & Proposed Fix tab
     await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll<HTMLElement>(".fixed.inset-0.z-50 button"));
@@ -171,7 +171,7 @@ async function runBrowserAudit() {
     });
     assert(
       modalText.includes("HIGH-STAKES ACTION: ANSWER KEY MODIFICATION"),
-      "2-Factor Answer Key confirmation checklist modal opened"
+      "Two-Step Answer Key confirmation checklist modal opened"
     );
 
     // Try clicking submit without checkboxes checked
@@ -180,7 +180,7 @@ async function runBrowserAudit() {
       const btn = buttons.find((b) => b.innerText.includes("Confirm & Commit Answer Key"));
       return btn ? btn.hasAttribute("disabled") : false;
     });
-    assert(submitDisabledBefore, "Confirmation button is strictly disabled until 2FA checklist is verified");
+    assert(submitDisabledBefore, "Confirmation button is strictly disabled until two-step confirmation checklist is verified");
 
     // Check both confirmation checkboxes
     await page.evaluate(() => {
@@ -201,7 +201,7 @@ async function runBrowserAudit() {
       }
       return false;
     });
-    assert(committedKey, "Confirmed 2-Factor Answer Key change");
+    assert(committedKey, "Confirmed Two-Step Answer Key change");
     await new Promise((r) => setTimeout(r, 1000));
 
     // Close review drawer

@@ -3,10 +3,10 @@
 ## 1. Who Loses the Most When a Question is Broken?
 The **student who prepared correctly** loses the most. When an answer key is inverted or a diagram is missing:
 1. **Psychological Impact:** A 17-year-old aspirant scoring negative marks on a correctly solved problem doubts their conceptual foundation days before JEE/NEET.
-2. **Rank Percentile Loss:** In JEE Advanced, a single 4-mark swing alters ranks by hundreds, determining whether a student enters IIT or misses out.
+2. **Scoring Inaccuracy:** Erroneous keys lead to grading discrepancies that distort student assessment results and create widespread doubt during revision.
 3. **Institutional Erosion:** If faculty ignore reports or defend erroneous keys, trust in Acadza evaporates.
 
-**Design Reflection:** The system prioritizes answer-key errors at the top of the queue with distinct visual alerts, provides a 2-factor verification gate, and delivers empathetic, reassuring feedback to students within seconds to preserve their confidence.
+**Design Reflection:** The system prioritizes answer-key errors at the top of the queue with distinct visual alerts, provides a two-step faculty confirmation checklist, and delivers empathetic, reassuring feedback to students within seconds to preserve their confidence.
 
 ## 2. Core Workflow & Decisions
 - **Intelligent Deduplication:** Groups 44 reports into 39 unique question items, eliminating redundant reviews for faculty.

@@ -218,7 +218,7 @@ export function OverviewMetrics() {
               <div className="font-semibold text-slate-900">Safety Eligibility Checked:</div>
               <div>• All repairs are classified as cosmetic (typos, markup leaks, exam tags, stem data).</div>
               <div>• All repairs have <code>auto: true</code> in taxonomy.</div>
-              <div>• Answer keys are strictly excluded (require individual 2-factor review).</div>
+              <div>• Answer keys are strictly excluded (require individual two-step confirmation).</div>
               <div>• Every replacement is verified against original database records.</div>
             </div>
 

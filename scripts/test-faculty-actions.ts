@@ -170,7 +170,7 @@ runTest("Batch approval applies question-level edit exactly once for duplicate g
 
 console.log("\n--- 3. SPECIFIC MANUAL WORKFLOW CASES AUDIT ---");
 
-runTest("Case R001–R003: AC voltage answer-key review, 2-factor confirmation required, cluster sync", () => {
+runTest("Case R001–R003: AC voltage answer-key review, two-step confirmation required, cluster sync", () => {
   const g = groups.find((item) => item.questionId === "60f744b3f1b9bc7cc7b4a949")!;
   assert(g);
   assert.strictEqual(g.reports.length, 3);

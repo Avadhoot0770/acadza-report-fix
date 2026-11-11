@@ -61,7 +61,7 @@ export function AnswerKeyConfirmationModal({
             <strong className="font-bold block mb-1">
               Scoring Impact Warning:
             </strong>
-            Altering this question&apos;s answer key will retroactively impact candidate test scores and percentile rankings across all active test series for JEE/NEET.
+            Altering this question&apos;s answer key will retroactively impact candidate test scores across all active test series for JEE/NEET.
           </div>
 
           {/* Details Table */}
