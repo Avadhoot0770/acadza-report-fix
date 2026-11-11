@@ -152,7 +152,8 @@ export function triageReport(
         // Enforce strict safety rules:
         // 1. auto: false repairs MUST route to faculty_review
         // 2. answer_key MUST route to faculty_review
-        if (!repairConfig.auto || repair === "answer_key") {
+        // 3. Defects where edit is null (requires human authoring) MUST route to faculty_review
+        if (!repairConfig.auto || repair === "answer_key" || edit === null) {
           route = "faculty_review";
         } else {
           route = "auto_apply";

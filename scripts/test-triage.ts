@@ -137,7 +137,45 @@ assert(
   `Test 10: All ${nonDefectResults.length} non-defect results have strictly null repair and edit with route no_change`
 );
 
-// Test 11: Original files in data/ remain byte-for-byte unchanged
+// Test 11: R009 & R010 option_repair never invents Option D (edit=null, route=faculty_review)
+const r009 = results.find((r) => r.reportId === "R009");
+const r010 = results.find((r) => r.reportId === "R010");
+assert(
+  r009?.edit === null &&
+    r009?.route === "faculty_review" &&
+    r010?.edit === null &&
+    r010?.route === "faculty_review",
+  "Test 11: R009 & R010 option_repair never invents distractor Option D; routes to faculty_review with edit=null"
+);
+
+// Test 12: R018 & R019 solution_fix foreign derivation routes to faculty_review with edit=null
+const r018 = results.find((r) => r.reportId === "R018");
+const r019 = results.find((r) => r.reportId === "R019");
+assert(
+  r018?.edit === null &&
+    r018?.route === "faculty_review" &&
+    r019?.edit === null &&
+    r019?.route === "faculty_review",
+  "Test 12: R018 & R019 solution_fix routes to faculty_review with edit=null (no fabricated multi-step derivations)"
+);
+
+// Test 13: All auto_apply results have valid, scoped non-null edits directly supported by records
+const autoApplyResults = results.filter((r) => r.route === "auto_apply");
+const allAutoApplyValid = autoApplyResults.every(
+  (r) =>
+    r.edit !== null &&
+    r.edit !== undefined &&
+    r.repair !== null &&
+    r.repair !== undefined &&
+    taxonomy.repairs[r.repair].auto === true &&
+    taxonomy.repairs[r.repair].fields.includes(r.edit.field)
+);
+assert(
+  autoApplyResults.length > 0 && allAutoApplyValid,
+  `Test 13: All ${autoApplyResults.length} auto_apply results have valid, scoped non-null edits directly supported by records`
+);
+
+// Test 14: Original files in data/ remain byte-for-byte unchanged
 const originalSizes = {
   "questions.json": 109574,
   "reports.json": 9922,

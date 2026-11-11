@@ -186,13 +186,9 @@ export function analyzeStructuralDefects(
     return {
       verdict: "defect",
       repair: "option_repair",
-      edit: {
-        field: "question",
-        find: "</h3>",
-        replace: "<br/>(D) 15 m/s</h3>",
-      },
+      edit: null, // Missing distractor cannot be recovered with certainty from record; route to faculty review
       evidence:
-        "The single-choice question only defines three options: (A), (B), and (C). Option (D) was truncated or missing in the question payload.",
+        "The single-choice question defines only three options: (A), (B), and (C). Option (D) was omitted or truncated. Because the original distractor cannot be recovered with certainty from the stored solution or metadata, automated repair must not invent an arbitrary option; faculty review is required to author or restore Option (D).",
       confidence: 0.98,
       isDeterministic: true,
     };
@@ -328,14 +324,10 @@ export function analyzeStructuralDefects(
     return {
       verdict: "defect",
       repair: "solution_fix",
-      edit: {
-        field: "solution",
-        find: "5.469",
-        replace: "0.3",
-      },
+      edit: null, // Foreign derivation from unrelated question requires faculty re-authoring
       evidence:
-        "The stored solution opens with foreign derivation steps from an unrelated problem (λ = 5.47 Å), even though the question asks for kinetic energy of an electron with λ = 0.3 nm. Keyed answer 16.8 eV is correct.",
-      confidence: 0.95,
+        "The stored solution opens with foreign derivation steps from an unrelated problem (calculating de-Broglie wavelength λ = 5.47 Å), even though the question asks for kinetic energy of an electron with λ = 0.3 nm. Although the final numerical value 16.8 eV is correct, re-authoring the full step-by-step derivation requires faculty review.",
+      confidence: 0.98,
       isDeterministic: true,
     };
   }

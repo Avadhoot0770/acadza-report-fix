@@ -101,15 +101,11 @@
     "questionId": "622f08d7b70e4b50e4500a1b",
     "verdict": "defect",
     "repair": "option_repair",
-    "edit": {
-      "field": "question",
-      "find": "</h3>",
-      "replace": "<br/>(D) 15 m/s</h3>"
-    },
-    "route": "auto_apply",
+    "edit": null,
+    "route": "faculty_review",
     "confidence": 0.98,
-    "evidence": "The single-choice question only defines three options: (A), (B), and (C). Option (D) was truncated or missing in the question payload.",
-    "student_reply": "Thank you for pointing this out! The missing option has been restored so the question can be answered completely. We really appreciate your diligence."
+    "evidence": "The single-choice question defines only three options: (A), (B), and (C). Option (D) was omitted or truncated. Because the original distractor cannot be recovered with certainty from the stored solution or metadata, automated repair must not invent an arbitrary option; faculty review is required to author or restore Option (D).",
+    "student_reply": "Thank you for pointing this out! Option (D) was omitted from the question, and we've routed this to our faculty team to restore the fourth option."
   },
   {
     "reportId": "R017",
@@ -301,15 +297,11 @@
     "questionId": "612151a6a34397610a9a2e58",
     "verdict": "defect",
     "repair": "solution_fix",
-    "edit": {
-      "field": "solution",
-      "find": "5.469",
-      "replace": "0.3"
-    },
-    "route": "auto_apply",
-    "confidence": 0.95,
-    "evidence": "The stored solution opens with foreign derivation steps from an unrelated problem (λ = 5.47 Å), even though the question asks for kinetic energy of an electron with λ = 0.3 nm. Keyed answer 16.8 eV is correct.",
-    "student_reply": "Thank you for flagging this step! While the final answer key is correct, the written solution had an error in its derivation; we have updated the explanation for clarity."
+    "edit": null,
+    "route": "faculty_review",
+    "confidence": 0.98,
+    "evidence": "The stored solution opens with foreign derivation steps from an unrelated problem (calculating de-Broglie wavelength λ = 5.47 Å), even though the question asks for kinetic energy of an electron with λ = 0.3 nm. Although the final numerical value 16.8 eV is correct, re-authoring the full step-by-step derivation requires faculty review.",
+    "student_reply": "Thank you for flagging this step! While the final answer key (16.8 eV) is correct, the written derivation contains steps from another problem. We've routed this to faculty to update the explanation."
   },
   {
     "reportId": "R039",
@@ -327,15 +319,11 @@
     "questionId": "622f08d7b70e4b50e4500a1b",
     "verdict": "defect",
     "repair": "option_repair",
-    "edit": {
-      "field": "question",
-      "find": "</h3>",
-      "replace": "<br/>(D) 15 m/s</h3>"
-    },
-    "route": "auto_apply",
+    "edit": null,
+    "route": "faculty_review",
     "confidence": 0.98,
-    "evidence": "The single-choice question only defines three options: (A), (B), and (C). Option (D) was truncated or missing in the question payload.",
-    "student_reply": "Thank you for pointing this out! The missing option has been restored so the question can be answered completely. We really appreciate your diligence."
+    "evidence": "The single-choice question defines only three options: (A), (B), and (C). Option (D) was omitted or truncated. Because the original distractor cannot be recovered with certainty from the stored solution or metadata, automated repair must not invent an arbitrary option; faculty review is required to author or restore Option (D).",
+    "student_reply": "Thank you for pointing this out! Option (D) was omitted from the question, and we've routed this to our faculty team to restore the fourth option."
   },
   {
     "reportId": "R013",
@@ -472,15 +460,11 @@
     "questionId": "612151a6a34397610a9a2e58",
     "verdict": "defect",
     "repair": "solution_fix",
-    "edit": {
-      "field": "solution",
-      "find": "5.469",
-      "replace": "0.3"
-    },
-    "route": "auto_apply",
-    "confidence": 0.95,
-    "evidence": "The stored solution opens with foreign derivation steps from an unrelated problem (λ = 5.47 Å), even though the question asks for kinetic energy of an electron with λ = 0.3 nm. Keyed answer 16.8 eV is correct.",
-    "student_reply": "Thank you for flagging this step! While the final answer key is correct, the written solution had an error in its derivation; we have updated the explanation for clarity."
+    "edit": null,
+    "route": "faculty_review",
+    "confidence": 0.98,
+    "evidence": "The stored solution opens with foreign derivation steps from an unrelated problem (calculating de-Broglie wavelength λ = 5.47 Å), even though the question asks for kinetic energy of an electron with λ = 0.3 nm. Although the final numerical value 16.8 eV is correct, re-authoring the full step-by-step derivation requires faculty review.",
+    "student_reply": "Thank you for flagging this step! While the final answer key (16.8 eV) is correct, the written derivation contains steps from another problem. We've routed this to faculty to update the explanation."
   },
   {
     "reportId": "R035",

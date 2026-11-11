@@ -60,6 +60,9 @@ export function generateStudentReply(ctx: StudentReplyContext): string {
     }
 
     if (repair === "option_repair") {
+      if (/option D|only 3/i.test(comment)) {
+        return "Thank you for pointing this out! Option (D) was omitted from the question, and we've routed this to our faculty team to restore the fourth option.";
+      }
       return "Thank you for pointing this out! The missing option has been restored so the question can be answered completely. We really appreciate your diligence.";
     }
 
@@ -72,6 +75,9 @@ export function generateStudentReply(ctx: StudentReplyContext): string {
     }
 
     if (repair === "solution_fix") {
+      if (/other question|5\.47/i.test(comment)) {
+        return "Thank you for flagging this step! While the final answer key (16.8 eV) is correct, the written derivation contains steps from another problem. We've routed this to faculty to update the explanation.";
+      }
       return "Thank you for flagging this step! While the final answer key is correct, the written solution had an error in its derivation; we have updated the explanation for clarity.";
     }
 
