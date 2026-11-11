@@ -23,8 +23,8 @@ Students tap **"Report Error"** and submit raw, emotional comments:
 
 | Resource | Link | Description |
 | :--- | :--- | :--- |
-| **Live Faculty Console** | `[YOUR_DEPLOYED_URL_HERE]` | Deployed Next.js 14 production application. |
-| **Video Walkthrough (3 min)** | `[YOUR_LOOM_VIDEO_LINK_HERE]` | Walkthrough of dashboard, tricky cases (R001–R003, R009/R010), diffs, and batch safety. |
+| **Live Faculty Console** | `[PENDING DEPLOYMENT: YOUR_DEPLOYED_URL_HERE]` | Deployed Next.js 14 production application. |
+| **Video Walkthrough (3 min)** | `[PENDING RECORDING: YOUR_LOOM_VIDEO_LINK_HERE]` | Walkthrough of dashboard, tricky cases (R001–R003, R009/R010), diffs, and batch safety. |
 | **Product Specification** | [PRODUCT.md](PRODUCT.md) | 1-page product brief answering the 4 core product evaluation questions. |
 | **Prompt Engineering & Logs** | [PROMPTS.md](PROMPTS.md) | Complete prompt architectures, boundary defenses, failure retrospective, and AI supervisor log. |
 
@@ -92,16 +92,16 @@ All 44 student reports and 43 questions in `data/` were audited and evaluated wi
 | 🛡️ **Answer Key Escalations** | **4** | **6** | **13.6%** | High-stakes key mismatches strictly requiring 2-factor faculty sign-off. |
 
 ### Duplicate Report Clusters
-- **`60f744b3c0c66042944b58e7` (3 Reports: R001, R002, R003):** AC circuit key error ($130\text{ V} \to 50\text{ V}$, Option A).
-- **`60f742f6c0c66042944b5894` (2 Reports: R007, R008):** Inductive reactance missing $L=95.5\text{ mH}$.
+- **`60f744b3f1b9bc7cc7b4a949` (3 Reports: R001, R002, R003):** AC circuit key error ($130\text{ V} \to 50\text{ V}$, Option A).
+- **`60f742f6660d187cc13a8078` (2 Reports: R007, R008):** Inductive reactance missing $L=95.5\text{ mH}$.
 - **`622f08d7b70e4b50e4500a1b` (2 Reports: R009, R010):** Projectile motion missing Option D.
-- **`612151a66e6c4664ecdae251` (2 Reports: R018, R019):** Atomic physics alien solution step.
+- **`612151a6a34397610a9a2e58` (2 Reports: R018, R019):** Atomic physics alien solution step.
 
 ---
 
 ## 🛡️ Non-Negotiable Safety Guardrails
 
-1. **Answer Keys Never Auto-Applied:** Even with 100% solver confidence, all 6 answer key reports (`R001`, `R002`, `R003`, `R004`, `R005`, `R028`) strictly route to `faculty_review` and require a mandatory 2-factor confirmation checklist.
+1. **Answer Keys Never Auto-Applied:** Even with 100% solver confidence, all 6 answer key reports (`R001`, `R002`, `R003`, `R004`, `R005`, `R020`) strictly route to `faculty_review` and require a mandatory 2-factor confirmation checklist.
 2. **Zero Content Hallucination:**
    - **R009 / R010 (Missing Option D):** Because the original 4th distractor is absent from database records, the system refuses to invent `(D) 15 m/s`. It sets `edit: null` and routes to faculty review.
    - **R018 / R019 (Alien Solution Derivation):** Rather than blindly splicing text into a corrupt derivation, `edit` is set to `null` with human escalation.
