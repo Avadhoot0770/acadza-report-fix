@@ -166,6 +166,7 @@ export const FacultyActionTypeSchema = z.enum([
   "edit",
   "reject",
   "re_triage",
+  "historical",
 ]);
 export type FacultyActionType = z.infer<typeof FacultyActionTypeSchema>;
 
@@ -173,22 +174,49 @@ export const FacultyAuditEntrySchema = z.object({
   id: z.string(),
   questionId: z.string(),
   reportId: z.string().optional(),
+  reportIds: z.array(z.string()).optional(),
   action: FacultyActionTypeSchema,
   actor: z.string(),
   timestamp: z.string(),
   note: z.string().optional(),
+  field: z.string().optional(),
+  repairKey: z.string().optional(),
+  beforeValue: z.any().optional(),
+  afterValue: z.any().optional(),
   proposedEdit: ProposedEditSchema.optional(),
   appliedEdit: ProposedEditSchema.optional(),
 });
 export type FacultyAuditEntry = z.infer<typeof FacultyAuditEntrySchema>;
 
-// Grouped question view model for the queue
+// Review Status for a Question Group
+export type ReviewStatus =
+  | "pending_review"
+  | "approved"
+  | "edited"
+  | "rejected"
+  | "auto_applied"
+  | "no_action_needed";
+
+// Grouped question view model for the queue & review workspace
 export interface QuestionGroup {
   questionId: string;
   question: QuestionRecord;
+  originalQuestion: QuestionRecord;
   reports: StudentReport[];
   triageResults: TriageResult[];
-  status: "pending_review" | "approved" | "edited" | "rejected" | "auto_applied";
+  primaryResult: TriageResult;
+  status: ReviewStatus;
   urgency: "critical" | "high" | "medium" | "low" | "info";
+  isDuplicate: boolean;
+  isAnswerKey: boolean;
+  isSolutionDerived: boolean;
+  isContentUnrecoverable: boolean;
   auditEntries: FacultyAuditEntry[];
+  facultyDecision?: {
+    action: FacultyActionType;
+    actor: string;
+    timestamp: string;
+    note?: string;
+    appliedEdit?: ProposedEdit;
+  } | null;
 }

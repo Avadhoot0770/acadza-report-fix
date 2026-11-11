@@ -1,6 +1,8 @@
 import {
   EditableField,
   ProposedEdit,
+  QuestionRecord,
+  QuestionType,
   RepairKey,
   Route,
   Taxonomy,
@@ -233,4 +235,110 @@ export function sanitizeStudentComment(comment: string): string {
   );
 
   return comment.trim();
+}
+
+/**
+ * Validates a faculty action before execution:
+ * 1. An action of type "edit" MUST provide a valid ProposedEdit that obeys the repair's allowed fields.
+ * 2. If repair has fields: [], cannot apply edit without manual authoring.
+ * 3. Ensures answer key modifications have been acknowledged.
+ */
+export function validateFacultyAction(
+  action: "approve" | "edit" | "reject",
+  repairKey: string | null | undefined,
+  edit: ProposedEdit | null | undefined,
+  taxonomy: Taxonomy,
+  answerKeyConfirmed: boolean = false
+): { valid: boolean; error?: string } {
+  if (action === "reject") {
+    return { valid: true };
+  }
+
+  if (action === "approve") {
+    if (repairKey === "answer_key" && !answerKeyConfirmed) {
+      return {
+        valid: false,
+        error:
+          "Safety requirement: Faculty must explicitly confirm answer key modifications before approval.",
+      };
+    }
+    return { valid: true };
+  }
+
+  if (action === "edit") {
+    if (!edit) {
+      return {
+        valid: false,
+        error: "Edit action requires a proposed edit payload.",
+      };
+    }
+    if (!repairKey) {
+      return {
+        valid: false,
+        error: "Cannot edit a question without an identified defect repair type.",
+      };
+    }
+    const scopeCheck = validateEditScope(repairKey, edit, taxonomy);
+    if (!scopeCheck.valid) {
+      return scopeCheck;
+    }
+    if (edit.field === "answer" && !answerKeyConfirmed) {
+      return {
+        valid: false,
+        error:
+          "Safety requirement: Faculty must explicitly confirm answer key modifications.",
+      };
+    }
+    return { valid: true };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Applies a verified ProposedEdit to an in-memory QuestionRecord.
+ * Preserves the original record structure and supports scq, mcq, and integerQuestion.
+ */
+export function applyEditToQuestion(
+  q: QuestionRecord,
+  edit: ProposedEdit
+): QuestionRecord {
+  const cloned = JSON.parse(JSON.stringify(q)) as QuestionRecord;
+  const payload = cloned[cloned.questionType];
+
+  if (edit.field === "questionType") {
+    const oldType = cloned.questionType;
+    const newType = edit.replace as QuestionType;
+    if (cloned[oldType] && !cloned[newType]) {
+      cloned[newType] = cloned[oldType];
+    }
+    cloned.questionType = newType;
+    return cloned;
+  }
+
+  if (!payload) return cloned;
+
+  if (edit.field === "answer") {
+    payload.answer = edit.replace;
+  } else if (edit.field === "question") {
+    if (edit.find && typeof edit.find === "string" && edit.find.length > 0) {
+      payload.question = payload.question.replace(
+        edit.find,
+        String(edit.replace)
+      );
+    } else {
+      payload.question = String(edit.replace);
+    }
+  } else if (edit.field === "solution") {
+    if (edit.find && typeof edit.find === "string" && edit.find.length > 0) {
+      payload.solution = payload.solution.replace(
+        edit.find,
+        String(edit.replace)
+      );
+    } else {
+      payload.solution = String(edit.replace);
+    }
+  }
+
+  return cloned;
 }

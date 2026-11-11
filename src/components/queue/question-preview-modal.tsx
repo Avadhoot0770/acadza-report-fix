@@ -13,11 +13,10 @@ import {
   User,
   X,
 } from "lucide-react";
-import { QuestionGroupViewModel } from "./report-queue-table";
-import { getQuestionPayload } from "@/types";
+import { getQuestionPayload, QuestionGroup, StudentReport } from "@/types";
 
 interface QuestionPreviewModalProps {
-  group: QuestionGroupViewModel | null;
+  group: QuestionGroup | null;
   onClose: () => void;
 }
 
@@ -36,6 +35,9 @@ export function QuestionPreviewModal({
   if (!group) return null;
 
   const payload = getQuestionPayload(group.question);
+  const answerStr = Array.isArray(payload.answer)
+    ? `[${payload.answer.join(", ")}]`
+    : String(payload.answer ?? "");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -48,7 +50,7 @@ export function QuestionPreviewModal({
                 {group.questionId}
               </span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-800 uppercase">
-                {group.questionType}
+                {group.question.questionType}
               </span>
               {group.isDuplicate && (
                 <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -57,9 +59,9 @@ export function QuestionPreviewModal({
               )}
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-              <span className="font-semibold text-slate-700">{group.subject}</span>
+              <span className="font-semibold text-slate-700">{group.question.subject}</span>
               <span>•</span>
-              <span>{group.chapter}</span>
+              <span>{group.question.chapter}</span>
               {group.question.concept && (
                 <>
                   <span>•</span>
@@ -86,7 +88,7 @@ export function QuestionPreviewModal({
                 Original Question Stem & Options
               </span>
               <div className="text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                Keyed Answer: <span className="font-mono font-bold">{group.answerKey}</span>
+                Keyed Answer: <span className="font-mono font-bold">{answerStr}</span>
               </div>
             </div>
             <div
@@ -99,10 +101,10 @@ export function QuestionPreviewModal({
           <div className="space-y-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-              Stored Production Solution
+              Stored Solution & Explanation
             </span>
             <div
-              className="p-5 rounded-xl border border-slate-200 bg-emerald-50/20 text-sm leading-relaxed text-slate-800 prose prose-slate max-w-none"
+              className="p-5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm leading-relaxed text-slate-900 prose prose-slate max-w-none shadow-inner"
               dangerouslySetInnerHTML={{ __html: payload.solution }}
             />
           </div>
@@ -114,7 +116,7 @@ export function QuestionPreviewModal({
               Untrusted Student Reports ({group.reports.length})
             </span>
             <div className="space-y-2">
-              {group.reports.map((report) => (
+              {group.reports.map((report: StudentReport) => (
                 <div
                   key={report.reportId}
                   className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/80 flex items-start justify-between gap-4"
@@ -129,24 +131,18 @@ export function QuestionPreviewModal({
                         {report.studentId}
                       </span>
                       <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="text-xs text-slate-400 flex items-center gap-1">
                         <Smartphone className="h-3 w-3" />
                         {report.source}
                       </span>
-                      <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(report.reportedAt).toLocaleDateString()}
-                      </span>
                     </div>
-                    <div className="text-sm font-medium text-slate-900 bg-white p-2.5 rounded-lg border border-slate-100 shadow-2xs">
-                      &quot;{report.comment}&quot;
-                    </div>
+                    <p className="text-xs text-slate-800 italic bg-white p-2 rounded-lg border border-slate-100 mt-1">
+                      &ldquo;{report.comment}&rdquo;
+                    </p>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <span className="text-[10px] uppercase font-semibold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded">
-                      Untrusted Lead
-                    </span>
+                  <div className="text-[11px] text-slate-400 flex items-center gap-1 shrink-0">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(report.reportedAt).toLocaleDateString()}
                   </div>
                 </div>
               ))}
@@ -155,13 +151,10 @@ export function QuestionPreviewModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between text-xs">
-          <p className="text-slate-500">
-            Phase 1 Foundation Shell • AI Triage Engine & Full Review Console activate in Stage 2 & 4.
-          </p>
+        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 shadow-2xs transition-colors"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
           >
             Close Preview
           </button>
