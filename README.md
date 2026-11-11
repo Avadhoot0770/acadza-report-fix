@@ -23,6 +23,7 @@ Students tap **"Report Error"** and submit raw, emotional comments:
 
 | Resource | Link | Description |
 | :--- | :--- | :--- |
+| **GitHub Repository** | [github.com/Avadhoot0770/acadza-report-fix](https://github.com/Avadhoot0770/acadza-report-fix) | Complete source code, test suites, and verified `results.json`. |
 | **Live Faculty Console** | `[PENDING DEPLOYMENT: YOUR_DEPLOYED_URL_HERE]` | Deployed Next.js 14 production application. |
 | **Video Walkthrough (3 min)** | `[PENDING RECORDING: YOUR_LOOM_VIDEO_LINK_HERE]` | Walkthrough of dashboard, tricky cases (R001–R003, R009/R010), diffs, and batch safety. |
 | **Product Specification** | [PRODUCT.md](PRODUCT.md) | 1-page product brief answering the 4 core product evaluation questions. |
@@ -135,7 +136,7 @@ All 44 student reports and 43 questions in `data/` were audited and evaluated wi
 
 ### 1. Clone & Install
 ```bash
-git clone <YOUR_REPO_URL>
+git clone https://github.com/Avadhoot0770/acadza-report-fix.git
 cd acadza-report-fix
 npm install
 ```
