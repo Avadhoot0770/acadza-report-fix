@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "test:triage": "tsx scripts/test-triage.ts",
     "test:faculty": "tsx scripts/test-faculty-actions.ts",
+    "test:browser": "tsx scripts/test-live-browser.ts",
     "test": "tsx scripts/test-triage.ts && tsx scripts/test-faculty-actions.ts",
     "triage": "tsx scripts/run-triage.ts"
   },
@@ -36,6 +37,7 @@
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
+    "puppeteer-core": "^25.17.0",
     "tailwindcss": "^3.4.15",
     "tsx": "^4.23.15",
     "typescript": "^5.6.3",
